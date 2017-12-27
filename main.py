@@ -13,6 +13,7 @@ import usocket
 from pinmap import amica
 
 ap = network.WLAN(network.AP_IF)
+ap.config(essid='KnucklesWifi', password=open('password.txt').read())
 if not ap.active(): ap.active(True)
 
 red = machine.PWM(machine.Pin(amica['D1']))
@@ -28,6 +29,7 @@ blue.duty(0)
 
 html = """
 <!DOCTYPE html><title>Knuckle's Collar</title>
+<html>
 <body>
 <form action="/led" method="GET">
 <span>red</span><input name="red" type="range" value="{}" min="0" max="1023"/>
@@ -35,12 +37,13 @@ html = """
 <span>blue</span><input name="blue" type="range" value="{}" min="0" max="1023"/>
 <input type='submit' value='OK'/>
 </form>
-<body>
+</body>
+</html>
 """
 
 def ok(socket, red, green, blue):
     print('sending response')
-    socket.write("HTTP/1.1 OK\r\n\r\n")
+    socket.write("HTTP/1.1 200 OK\r\n\r\n")
     socket.write(html.format(int(red), int(green), int(blue)))
 
 def err(socket, code, message):
