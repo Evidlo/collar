@@ -41,21 +41,6 @@ html = """
 def ok(socket, red, green, blue):
     print('sending response')
     socket.write("HTTP/1.1 OK\r\n\r\n")
-    # socket.write("<!DOCTYPE html><title>"+TITLE+"</title><body>")
-    # socket.write(TITLE+" status: ")
-    # if pin.value():
-    #     socket.write("<span style='color:green'>ON</span>")
-    # else:
-    #     socket.write("<span style='color:red'>OFF</span>")
-    # socket.write("<br>")
-    # if pin.value():
-    #     socket.write("<form method='POST' action='/off?"+query.decode()+"'>"+
-    #                  "<input type='submit' value='turn OFF'>"+
-    #                  "</form>")
-    # else:
-    #     socket.write("<form method='POST' action='/on?"+query.decode()+"'>"+
-    #                  "<input type='submit' value='turn ON'>"+
-    #                  "</form>")
     socket.write(html.format(int(red), int(green), int(blue)))
 
 def err(socket, code, message):
@@ -82,27 +67,15 @@ def handle(socket):
     print('method:',method)
     if version == b"HTTP/1.0\r\n" or version == b"HTTP/1.1\r\n":
         if method == b"GET":
-            # if path == b"/on":
-            #     pin.on()
-            #     ok(socket, query)
-            # elif path == b"/off":
-            #     pin.off()
-            #     ok(socket, query)
-            # else:
-            #     err(socket, "404", "Not Found")
             if path == b"off":
                 red.duty(0)
                 green.duty(0)
                 blue.duty(0)
             elif path.startswith(b'/led'):
-                print('a')
                 red_duty, green_duty, blue_duty = [color.split(b'=')[1] for color in query.split(b'&')]
-                print(red_duty)
-                print('b')
                 red.duty(int(red_duty))
                 green.duty(int(green_duty))
                 blue.duty(int(blue_duty))
-                print('c')
                 ok(socket, red_duty, green_duty, blue_duty)
             else:
                 ok(socket, 512, 512, 512)
