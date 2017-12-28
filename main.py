@@ -10,47 +10,64 @@ GPIO_NUM = 5
 import network
 import machine
 import usocket
+import math
 from pinmap import amica
 
 ap = network.WLAN(network.AP_IF)
-ap.config(essid='KnucklesWifi', password=open('password.txt').read())
+password = open('password.txt').read().rstrip('\n')
+hostname = 'knuckles'
+ap.config(essid='KnucklesWifi', password=password)
 if not ap.active(): ap.active(True)
+
+timer = machine.Timer(1)
+timer_initialized = False
 
 red = machine.PWM(machine.Pin(amica['D1']))
 green = machine.PWM(machine.Pin(amica['D2']))
 blue = machine.PWM(machine.Pin(amica['D5']))
-red.freq(1000)
-green.freq(1000)
-blue.freq(1000)
-red.duty(0)
-green.duty(0)
-blue.duty(0)
+red_duty = 0
+green_duty = 0
+blue_duty = 0
+red.freq(200)
+green.freq(200)
+blue.freq(200)
+red.duty(red_duty)
+green.duty(green_duty)
+blue.duty(blue_duty)
 
+lights_on = True
+def flash(_):
+    global lights_on
+    if lights_on:
+        red.duty(0)
+        green.duty(0)
+        blue.duty(0)
+        lights_on = False
+    else:
+        red.duty(red_duty)
+        green.duty(green_duty)
+        blue.duty(blue_duty)
+        lights_on = True
 
-html = """
-<!DOCTYPE html><title>Knuckle's Collar</title>
-<html>
-<body>
-<form action="/led" method="GET">
-<span>red</span><input name="red" type="range" value="{}" min="0" max="1023"/>
-<span>green</span><input name="green" type="range" value="{}" min="0" max="1023"/>
-<span>blue</span><input name="blue" type="range" value="{}" min="0" max="1023"/>
-<input type='submit' value='OK'/>
-</form>
-</body>
-</html>
-"""
+count = 0
+def party(_):
+    global count
+    count = (count + 1) % 99
+    red.duty(int(1023 * (math.sin(2 * math.pi * float(count) / 99) / 2 + 1/2)))
+    green.duty(int(1023 * (math.sin(2 * math.pi * float((count + 33) % 99) / 99) / 2 + 1/2)))
+    blue.duty(int(1023 * (math.sin(2 * math.pi * float((count + 66) % 99) / 99) / 2 + 1/2)))
 
-def ok(socket, red, green, blue):
-    print('sending response')
+def ok(socket):
     socket.write("HTTP/1.1 200 OK\r\n\r\n")
-    socket.write(html.format(int(red), int(green), int(blue)))
+    html = open('index.html').read()
+    socket.write(html)
 
 def err(socket, code, message):
     socket.write("HTTP/1.1 "+code+" "+message+"\r\n\r\n")
     socket.write("<h1>"+message+"</h1>")
 
 def handle(socket):
+    global red_duty, blue_duty, green_duty, timer_initialized
     (method, url, version) = socket.readline().split(b" ")
     if b"?" in url:
         (path, query) = url.split(b"?", 2)
@@ -75,13 +92,26 @@ def handle(socket):
                 green.duty(0)
                 blue.duty(0)
             elif path.startswith(b'/led'):
-                red_duty, green_duty, blue_duty = [color.split(b'=')[1] for color in query.split(b'&')]
-                red.duty(int(red_duty))
-                green.duty(int(green_duty))
-                blue.duty(int(blue_duty))
-                ok(socket, red_duty, green_duty, blue_duty)
-            else:
-                ok(socket, 512, 512, 512)
+                red_duty, green_duty, blue_duty, radio = [color.split(b'=')[1] for color in query.split(b'&')]
+                red_duty = int(red_duty)
+                green_duty = int(green_duty)
+                blue_duty = int(blue_duty)
+                if radio == b'solid':
+                    if timer_initialized:
+                        timer.deinit()
+                        timer_initialized = False
+                    red.duty(red_duty)
+                    green.duty(green_duty)
+                    blue.duty(blue_duty)
+                if radio == b'flash':
+                    timer.init(period=100, mode=machine.Timer.PERIODIC, callback=flash)
+                    timer_initialized = True
+
+                elif radio == b'party':
+                    timer.init(period=100, mode=machine.Timer.PERIODIC, callback=party)
+                    timer_initialized = True
+
+            ok(socket)
 
     else:
         err(socket, "505", "Version Not Supported")
@@ -96,6 +126,9 @@ while True:
         handle(socket)
     except Exception as e:
         print(e)
-        socket.write("HTTP/1.1 500 Internal Server Error\r\n\r\n")
-        socket.write("<h1>Internal Server Error</h1>")
+        try:
+            socket.write("HTTP/1.1 500 Internal Server Error\r\n\r\n")
+            socket.write("<h1>Internal Server Error</h1>")
+        except Exception as e:
+            print(e)
     socket.close()

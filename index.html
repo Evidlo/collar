@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+    <title>Knuckle's Collar</title>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+
+        <style>
+         body {
+             background-color: darkgrey;
+             font-size: 20px;
+         }
+         input[type='radio'] {
+             height: 4em;
+             width: 4em;
+             margin: 1em;
+             vertical-align: middle;
+             display: inline-block;
+         }
+         label {
+             vertical-align: middle;
+             display: inline-block;
+         }
+         input[type=range]::-moz-range-thumb {
+             border-radius: 10px;
+         }
+         input[type=range] {
+             -webkit-appearance: none;
+             width: 100%;
+             margin: 5.8px 0;
+         }
+         input[type=range]:focus {
+             outline: none;
+         }
+         input[type=range]::-webkit-slider-runnable-track {
+             width: 100%;
+             height: 27.4px;
+             cursor: pointer;
+             box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+             background: grey;
+             border-radius: 1.3px;
+             border: 0.2px solid #010101;
+         }
+         input[type=range]::-webkit-slider-thumb {
+             box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+             border: 1px solid #000000;
+             height: 39px;
+             /* width: 30px; */
+             border-radius: 24px;
+             background: #ffffff;
+             cursor: pointer;
+             -webkit-appearance: none;
+             margin-top: -6px;
+         }
+         input[type=range]:focus::-webkit-slider-runnable-track {
+             background: grey;
+         }
+         input[type=range]::-moz-range-track {
+             width: 100%;
+             height: 27.4px;
+             cursor: pointer;
+             box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+             background: grey;
+             border-radius: 1.3px;
+             border: 0.2px solid #010101;
+         }
+         input[type=range]::-moz-range-thumb {
+             box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+             border: 1px solid #000000;
+             height: 39px;
+             /* width: 30px; */
+             border-radius: 24px;
+             background: #ffffff;
+             cursor: pointer;
+         }
+
+        </style>
+        <script>
+         function update() {
+             var red = document.getElementById("red").value;
+             var green = document.getElementById("green").value;
+             var blue = document.getElementById("blue").value;
+             var radio = document.querySelector('input[name="mode"]:checked').value;
+             var url = "/led?red=" + red + "&green=" + green + "&blue=" + blue + "&radio=" + radio;
+             console.log(url)
+             var xmlHttp = new XMLHttpRequest();
+             xmlHttp.open( "GET", url, true ); // false for synchronous request
+             xmlHttp.send( null );
+             return xmlHttp.responseText;
+         }
+        </script>
+    </head>
+    <body>
+        <form action="/led" method="GET">
+            red
+            <div>
+                <input id="red" name="red" type="range" value="{}" min="0" max="1023" onchange="update()"/>
+            </div>
+            green
+            <div>
+                <input id="green" name="green" type="range" value="{}" min="0" max="1023" onchange="update()"/>
+            </div>
+            blue
+            <div>
+                <input id="blue" name="blue" type="range" value="{}" min="0" max="1023" onchange="update()"/>
+            </div>
+            <div>
+                <input type="radio" name="mode" id="solid" value="solid" onchange="update()" checked>
+                <label for="solid">Solid</label>
+            </div>
+            <div>
+                <input type="radio" name="mode" id="flash" value="flash" onchange="update()">
+                <label for="flash">Flash</label>
+            </div>
+            <div>
+                <input type="radio" name="mode" id="party" value="party" onchange="update()">
+                <label for="party">Party</label>
+            </div>
+        </form>
+        <div>
+            <img style="width: 50%; display:block; margin: auto;" src="data:image/jpeg;base64,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" />
+        </div>
+    </body>
+</html>
